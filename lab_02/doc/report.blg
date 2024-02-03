@@ -1,0 +1,66 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: report.aux
+Reallocating 'name_of_file' (item size: 1) to 10 items.
+A level-1 auxiliary file: title.aux
+Reallocating 'name_of_file' (item size: 1) to 13 items.
+A level-1 auxiliary file: contents.aux
+Reallocating 'name_of_file' (item size: 1) to 10 items.
+A level-1 auxiliary file: intro.aux
+Reallocating 'name_of_file' (item size: 1) to 13 items.
+A level-1 auxiliary file: analysis.aux
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+A level-1 auxiliary file: design.aux
+Reallocating 'name_of_file' (item size: 1) to 15 items.
+A level-1 auxiliary file: technology.aux
+Reallocating 'name_of_file' (item size: 1) to 13 items.
+A level-1 auxiliary file: research.aux
+Reallocating 'name_of_file' (item size: 1) to 15 items.
+A level-1 auxiliary file: conclusion.aux
+Reallocating 'name_of_file' (item size: 1) to 11 items.
+A level-1 auxiliary file: biblio.aux
+Reallocating 'name_of_file' (item size: 1) to 13 items.
+The style file: utf8gost705u.bst
+Reallocating 'name_of_file' (item size: 1) to 7 items.
+Database file #1: biblio.bib
+You've used 4 entries,
+            2958 wiz_defined-function locations,
+            687 strings with 5906 characters,
+and the built_in function-call counts, 464 in all, are:
+= -- 41
+> -- 4
+< -- 0
++ -- 4
+- -- 0
+* -- 6
+:= -- 46
+add.period$ -- 8
+call.type$ -- 4
+change.case$ -- 0
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 28
+empty$ -- 65
+format.name$ -- 0
+if$ -- 110
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 0
+newline$ -- 30
+num.names$ -- 0
+pop$ -- 24
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 15
+stack$ -- 0
+substring$ -- 0
+swap$ -- 12
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 0
+while$ -- 0
+width$ -- 5
+write$ -- 53

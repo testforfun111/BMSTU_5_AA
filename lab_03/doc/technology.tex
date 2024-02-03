@@ -1,0 +1,185 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут указаны требования к программному обеспечению, средства реализации, будут представлены реализация алгоритмов, а также функциональные тесты.
+
+\section{Требования к программному обеспечению}
+К программе предъявляются следующие требования.
+\begin{itemize}
+	\item Программа должна предоставлять 2 режима работы: режим сортировки массива между введёнными пользователем и режим замера процессорного времени выполнения сортировки массива.
+	\item В начале работы программы пользователю нужно ввести целое число --- это выбор пункта меню.
+\end{itemize}
+
+К первому режиму работы программы предъявляются следующие требования:
+\begin{itemize}
+	\item если пункт меню --- число от 1 до 3, то сортировать массив, для этого надо ввести размер массива и его элементы;
+	\item программа должна вывести результирующий массив.
+\end{itemize}
+
+Ко второму режиму работы программы предъявляются следующие требования:
+\begin{itemize}
+	\item если пункт меню --- число от 4 до 5, то провести замеры времени и памяти сортировки каждого алгоритма;
+	\item массив генерируются автоматически.
+\end{itemize}
+
+\section{Средства реализации}
+
+Реализация данной лабораторной работы выполнялась при помощи языка программирования С. Данный выбор обусловлен наличием у языка функции $clock()$ измерения процессорного времени.
+
+Визуализация графиков с помощью библиотеки $Matplolib$.
+\section{Сведения о модулях программы}
+
+Программа состоит из следующих модулей:
+
+\begin{itemize}
+	\item main.c --- главный файл программы, предоставляющий пользователю меню для выполнения основных функций;
+	\item sort.c --- файл, содержащий реализации этих функций;
+	\item sort.h --- заголовочный файл, содержащий объявлении функций, реализуюших рассматриваемых алгоритмови;
+	\item time.c --- файл, содержащий функции замеров времени работы указанных алгоритмов;
+	\item time.h --- заголовочный файл, содержащий объявлении функций замеров времени работы указанных алгоритмов;
+	\item graph\_result.py --- файл, содержащий функции визуализации временных характеристик описанных алгоритмов;
+	\item memory.c --- файл, содержащий функции замеров памяти для реализации алгоритмов;
+	\item memory.h --- заголовочный файл, содержащий объявлении функций замеров памяти для реализации.
+\end{itemize}
+
+\section{Реализация алгоритмов}
+
+Aлгоритм битонной сортировки, алгоритм поразрядной сортировки и алгоритм сортировки пузырьком приведены в листингах \ref{lst:bitonic} -- \ref{lst:bubble}.
+
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:bitonic,caption=Aлгоритм битонной сортировки]
+void compAndSwap(int *arr, int i, int j, int dir)
+{
+	if (dir==(arr[i]>arr[j]))
+		swap(arr + i, arr + j);
+}
+
+void bitonicMerge(int *arr, int low, int cnt, int dir)
+{
+	if (cnt>1)
+	{
+		int k = cnt/2;
+		for (int i=low; i<low+k; i++)
+			compAndSwap(arr, i, i+k, dir);
+		bitonicMerge(arr, low, k, dir);
+		bitonicMerge(arr, low+k, k, dir);
+	}
+}
+
+void bitonicSort(int *arr,int low, int cnt, int dir)
+{
+	if (cnt>1)
+	{
+		int k = cnt/2;
+		
+		bitonicSort(arr, low, k, 1);
+		
+		bitonicSort(arr, low+k, k, 0);
+		
+		bitonicMerge(arr, low, cnt, dir);
+	}
+}
+
+void bitonic_sort(int *arr, int size)
+{
+	bitonicSort(arr, 0, size, 1);
+}
+\end{lstlisting}
+\end{center}
+\clearpage
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:radix,caption=Aлгоритм поразрядной сортировки]
+int getMax(int *arr, int n)
+{
+	int mx = *arr;
+	for (int i = 1; i < n; i++)
+		if (arr[i] > mx)
+			mx = arr[i];
+	return mx;
+}
+
+void countSort(int *arr, int n, int exp)
+{
+	int *output = allocate_arr(n);
+	int i, count[10] = { 0 };
+	
+	for (i = 0; i < n; i++)
+		count[(arr[i] / exp) % 10]++;
+	
+	for (i = 1; i < 10; i++)
+		count[i] += count[i - 1];
+	
+	for (i = n - 1; i >= 0; i--) {
+		output[count[(arr[i] / exp) % 10] - 1] = arr[i];
+		count[(arr[i] / exp) % 10]--;
+	}
+	
+	for (i = 0; i < n; i++)
+		arr[i] = output[i];
+	deallocate_arr(output);
+}
+
+void radix_sort(int *arr, int n)
+{
+	int m = getMax(arr, n);
+	
+	for (int exp = 1; m / exp > 0; exp *= 10)
+		countSort(arr, n, exp);
+}
+\end{lstlisting}
+\end{center}
+\clearpage
+\begin{center}
+	\captionsetup{justification=raggedright,singlelinecheck=off}
+	\begin{lstlisting}[label=lst:bubble,caption=Aлгоритма сортировки пузырьком]
+		void bubble_sort(int *arr, int size)
+		{
+			for (int i = 0; i < size; i++)
+				for (int j = 0; j < size - i - 1; j++)
+					if (arr[j] > arr[j + 1])
+						swap(arr + j, arr + j + 1);
+		}
+	\end{lstlisting} 
+\end{center}
+
+
+\section{Функциональные тесты}
+
+В таблице \ref{tbl:tests} приведены функциональные тесты для функций, реализующих алгоритмы сортировки. Все тесты пройдены успешно.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:tests} Функциональные тесты}
+			\begin{tabular}{|c|c|c|c|c|}
+				\hline
+				&Входные данные& \multicolumn{3}{c|}{Ожидаемый результат} \\
+				\hline
+				№&Массив&Битонная&Поразрядрая&Пузырьком \\
+				\hline
+				1&[ ]&[ ]&[ ]&[ ] \\
+				\hline
+				2&[1]&[1]&[1]&[1] \\
+				\hline
+				3&[3, 3, 3, 3]&[3, 3, 3, 3]&[3, 3, 3, 3]&[3, 3, 3, 3] \\
+				\hline
+				4&[1, 2, 3, 4]&[1, 2, 3, 4]&[1, 2, 3, 4]&[1, 2, 3, 4] \\
+				\hline
+				5&[9, 5, 3, 1]&[1, 3, 5, 9]&[1, 3, 5, 9]&[1, 3, 5, 9] \\
+				\hline
+				6&[9, 5, 6, 1]&[1, 5, 6, 9]&[1, 5, 6, 9]&[1, 5, 6, 9] \\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+
+
+\section{Вывод}
+
+Были реализованы функции всех алгоритмов сортировок — битонной, поразрядной и пузырьком.
+Было проведено функциональное тестирование указанных функций.

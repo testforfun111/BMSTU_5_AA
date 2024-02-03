@@ -1,0 +1,168 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут приведены средства реализации, листинги кода и функциональные тесты.
+
+
+\section{Средства реализации}
+Для реализации алгоритмов был выбран язык программирования \textit{Python}, а в качестве среды разработки - \textit{Visual Studio Code}.
+Для замеров процессорного времени использовалась функция \textit{process\_time()} из библиотеки \textit{time}, а для построения графиков - библиотека \textit{matplotlib} \cite{mpl}.
+
+\section{Сведения о модулях программы}
+Программа состоит из 4 модулей:
+\begin{itemize}
+        \item main.py — точка входа;
+        \item algorythms.py — хранит реализацию алгоритмов;
+        \item compare.py — хранит реализацию системы замера времени;
+        \item constant.py — хранит константы.
+\end{itemize} 
+
+\section{Реализация алгоритмов}
+Ниже представлены реализации алгоритмов поиска расстояний Левенштейна и Дамерау~---~Левенштейна (листинги \ref{lst:lev}--\ref{lst:recwithcache}).
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:lev,caption=Итерационный алгоритм поиска расстояния Левенштейна]
+def DLevenshtein(str1, str2):
+	n = len(str1)
+	m = len(str2)
+	matrix = createMatrix(n + 1, m + 1, 0)
+	
+	for i in range(0, n + 1):
+		for j in range(0, m + 1):
+			if (i == 0 or j == 0):
+				matrix[i][j] = max(i, j)
+			else:
+				matrix[i][j] = min(matrix[i - 1][j] + 1,
+							matrix[i][j - 1] + 1,
+							matrix[i - 1][j - 1] +
+							 int(str1[i - 1] != str2[j - 1]))
+	
+	return matrix
+	
+\end{lstlisting}
+\end{center}
+
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:DamLev,caption=Итерационный алгоритм поиска расстояния Дамерау~---~Левенштейна]
+def DDamerauLevenshtein(str1, str2):
+	n = len(str1)
+	m = len(str2)
+	matrix = createMatrix(n + 1, m + 1, 0)
+	
+	for i in range(0, n + 1):
+		for j in range(0, m + 1):
+			if (i != 0 and j != 0):
+				matrix[i][j] = min(matrix[i - 1][j] + 1,
+						matrix[i][j - 1] + 1,
+						matrix[i - 1][j - 1] + 
+							int(str1[i - 1] != str2[j - 1]))
+			if (i > 1 and j > 1 and
+				str1[i - 1] == str2[j - 2] and
+				str1[i - 2] == str2[j - 1]):
+					matrix[i][j] = min(matrix[i][j], 
+									matrix[i - 2][j - 2] + 1)
+			else:
+				matrix[i][j] = max(i, j)
+		
+	return matrix
+
+	
+\end{lstlisting}
+\end{center}
+
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:recDamLev,caption=Рекурсивный алгоритм поиска расстояния Дамерау~---~Левенштейна]
+def DDamerauLevenshteinRecursive(str1, str2):
+	n = len(str1)
+	m = len(str2)
+	
+	if n != 0:
+		if m != 0:
+			add = DDamerauLevenshteinRecursive(str1, str2[:m-1]) + 1
+			delete = DDamerauLevenshteinRecursive(str1[:n-1], str2) + 1
+			change = DDamerauLevenshteinRecursive(str1[:n-1], 
+						str2[:m-1]) + int(str1[n- 1] != str2[m - 1])
+			
+			result = min(add, delete, change)
+			
+			if (n >= 2 and m >=2 and 
+				str1[n-1] == str2[m-2] and
+				str1[n-2] == str2[m-1]):
+					result = min(result, DDamerauLevenshteinRecursive(str1[:n-2], 
+					str2[:m-2]) + 1)
+		else:
+			return n 
+	else:
+		return m 
+	return result
+	
+\end{lstlisting}
+\end{center}
+
+
+\begin{center}
+    \captionsetup{justification=raggedright,singlelinecheck=off}
+    \begin{lstlisting}[label=lst:recwithcache,caption=Рекурсивный алгоритм поиска расстояния Дамерау~---~Левенштейна с кешем]
+
+def Recursive(str1, str2, n, m, matrix):
+	if (n != 0 and m != 0):
+		if (matrix[n][m] == -1):
+			delete = Recursive(str1, str2, n - 1, m, matrix) + 1
+			insert = Recursive(str1, str2, n, m - 1, matrix) + 1
+			change = Recursive(str1, str2, n - 1,
+					 m - 1, matrix) +
+					 int(str1[n - 1] != str2[m - 1])
+		
+		matrix[n][m] = min(insert, delete, change)
+		if (n > 1 and m > 1 and str1[n - 1] == str2[m - 2] and
+			str1[n - 2] == str2[m - 1]):
+				matrix[n][m] = min(matrix[n][m],
+					Recursive(str1, str2, n - 2, m - 2, matrix) + 1)
+	else:
+		matrix[n][m] = max(n, m)
+	
+	return matrix[n][m]
+
+def DDamerauLevenshteinRecurciveCache(str1, str2):
+	n = len(str1)
+	m = len(str2)
+	
+	matrix = createMatrix(n + 1, m + 1, -1)
+	
+	Recursive(str1, str2, n, m, matrix)
+	
+	return matrix
+
+\end{lstlisting}
+\end{center}
+
+
+\section{Функциональные тесты}
+	В таблице 3.1 приведены функциональные тесты для алгоритмов поиска расстояний Левенштейна и Дамерау~---~Левенштейна. Все тесты пройдены успешно.
+\begin{table}[ht]
+	\small
+	\begin{center}
+		\begin{threeparttable}
+			\caption{Функциональные тесты}
+			\label{tbl:tests}
+			\begin{tabular}{|c|c|c|c|c|c|c|}
+				\hline
+				& \multicolumn{2}{c|}{\bfseries Входные данные}&\multicolumn{4}{c|}{\bfseries Выходные данные}\\\hline
+				&&&&\multicolumn{3}{c|}{\bfseries Дамерау — Левенштейн}\\\cline{5-7}
+				&\bfseries str\_1&\bfseries str\_2&\bfseries Левенштейн&\bfseries Нерекурсивный&\multicolumn{2}{c|}{\bfseries Рекурсивный}\\\cline{6-7}
+				&\bfseries &\bfseries &\bfseries &\bfseries &\bfseries Без кэша&\bfseries С кэшем
+				\csvreader{tests.csv}{}
+				{\\\hline\csvcoli & \csvcolii & \csvcoliii & \csvcoliv & \csvcolv & \csvcolvi & \csvcolvii} \\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+
+\section*{Вывод}
+
+В этом разделе были рассмотрены средства реализации задания, представлены листинги реализации алгоритмов поиска расстояний Левенштейна и Дамерау~---~Левенштейна, а также тесты.

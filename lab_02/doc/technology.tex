@@ -1,0 +1,268 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут указаны средства реализации, будут представлены листинги кода, а также функциональные тесты.
+
+\section{Средства реализации}
+
+Реализация данной лабораторной работы выполнялась при помощи языка программирования Python. Выбор ЯП обусловлен простотой синтаксиса, большим числом библиотек и эффективностью визуализации данных.
+
+Замеры времени проводились при помощи функции process\_time из библиотеки time.
+
+\section{Сведения о модулях программы}
+
+Программа состоит из следующих модулей:
+
+\begin{itemize}
+	\item main.py - главный файл программы, предоставляющий пользователю меню для выполнения основных функций;
+	\item matrix.py - файл, содержащий функции работы с матрицами;
+	\item time\_test.py - файл, содержащий функции замеров времени работы указанных алгоритмов;
+	\item graph\_result.py - файл, содержащий функции визуализации временных характеристик описанных алгоритмов;
+	\item memory.py - файл, содержащий функции замеров памяти для реализвции алгоритмов умножения матриц.
+\end{itemize}
+
+\section{Листинги кода}
+
+Стандартный алгоритм, алгоритм Винограда, алгоритм Штрассена и оптимизированный алгоритм Винограда умножения матриц приведены в листингах \ref{lst:standard}-\ref{lst:optimized}.
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:standard,caption=Стандартный алгоритм умножения матриц]
+def standard_mult(A, B):
+n = len(A)
+	m = len(B[0])
+	p = len(A[0])
+	
+	C = [[0] * m for _ in range(n)]
+	
+	for i in range(n):
+		for j in range(m):
+			for k in range(p):
+				C[i][j] = C[i][j] + A[i][k] * B[k][j]
+	
+	return C
+\end{lstlisting} 
+\end{center}
+\clearpage
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:winograd,caption=Алгоритм Винограда умножения матриц]
+def winograd_mult(A, B):
+	n = len(A)
+	m = len(B[0])
+	p = len(A[0])
+	
+	C = [[0] * m for _ in range(n)]
+	
+	row_factors = [0] * n
+	
+	for i in range(n):
+		for j in range(p // 2):
+			row_factors[i] = row_factors[i] + \
+			A[i][2 * j] * A[i][2 * j + 1]
+	
+	column_factors = [0] * m
+	
+	for i in range(m):
+		for j in range(p // 2):
+			column_factors[i] = column_factors[i] + \
+			B[2 * j][i] * B[2 * j + 1][i]
+	
+	for i in range(n):
+		for j in range(m):
+			C[i][j] = -row_factors[i] - column_factors[j]
+			for k in range(p // 2):
+				C[i][j] = C[i][j] + (A[i][2 * k + 1] + B[2 * k][j]) * \
+				(A[i][2 * k] + B[2 * k + 1][j])
+	
+	if p % 2 != 0:
+		for i in range(n):
+			for j in range(m):
+				C[i][j] = C[i][j] + A[i][p - 1] * B[p - 1][j]
+	
+	return C
+\end{lstlisting}
+\end{center}
+\clearpage
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:strassen,caption=Алгоритм Штрассена умножения матриц]
+def split(matrix):
+	row, col = len(matrix), len(matrix[0])
+	row2, col2 = row//2, col//2
+	matr1 = [matrix[i][:col2] for i in range(row2)]
+	matr2 = [matrix[i][col2:] for i in range(row2)]
+	matr3 = [matrix[i][:col2] for i in range(row2, row)]
+	matr4 = [matrix[i][col2:] for i in range(row2, row)]
+	
+	return matr1, matr2, matr3, matr4 
+
+def add_matrix(a, b):
+	new_matrix = []
+	for i in range(len(a)):
+		new_matrix.append([])
+	for j in range(len(a[0])):
+		new_matrix[i].append(a[i][j] + b[i][j])
+	return new_matrix
+
+def sub_matrix(a, b):
+	new_matrix = []
+	for i in range(len(a)):
+		new_matrix.append([])
+	for j in range(len(a[0])):
+		new_matrix[i].append(a[i][j] - b[i][j])
+	return new_matrix
+
+def default_matrix_multiplication(a, b):
+	if len(a) != 2 or len(a[0]) != 2 or len(b) != 2 or len(b[0]) != 2:
+		raise Exception("Matrices are not 2x2")
+	new_matrix = [
+	[a[0][0] * b[0][0] + a[0][1] * b[1][0], a[0][0] * b[0][1] + a[0][1] * b[1][1]],
+	[a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]],
+	]
+	return new_matrix
+
+def strassen_mult_sq(x, y):
+	if len(x) == 2 and len(x[0]) == 2:
+		return default_matrix_multiplication(x, y)
+	
+	a, b, c, d = split(x)
+	e, f, g, h = split(y)
+	p1 = strassen_mult_sq(a, sub_matrix(f, h)) 
+	p2 = strassen_mult_sq(add_matrix(a, b), h)	 
+	p3 = strassen_mult_sq(add_matrix(c, d), e)	 
+	p4 = strassen_mult_sq(d, sub_matrix(g, e))	 
+	p5 = strassen_mult_sq(add_matrix(a, d), add_matrix(e, h))	 
+	p6 = strassen_mult_sq(sub_matrix(b, d), add_matrix(g, h)) 
+	p7 = strassen_mult_sq(sub_matrix(a, c), add_matrix(e, f)) 
+	
+	c11 = add_matrix(sub_matrix(add_matrix(p5, p4), p2), p6) 
+	c12 = add_matrix(p1, p2)		 
+	c21 = add_matrix(p3, p4)		 
+	c22 = sub_matrix(sub_matrix(add_matrix(p1,p5), p3), p7) 
+	
+	C = []
+	for i in range(len(c12)):
+		C.append(c11[i] + c12[i])
+	
+	for i in range(len(c21)):
+		C.append(c21[i] + c22[i])
+	return C 
+\end{lstlisting}
+\end{center}
+\clearpage
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:optimized,caption=Оптимизированный алгоритм Винограда умножения матриц]
+def optimized_winograd_mult(A, B):
+	n = len(A)
+	m = len(B[0])
+	p = len(A[0])
+	
+	C = [[0] * m for _ in range(n)]
+	
+	row_factors = [0] * n
+	
+	for i in range(n):
+		for j in range(p // 2):
+			row_factors[i] += A[i][j << 1] * A[i][(j << 1) + 1]
+	
+	column_factors = [0] * m
+	
+	for i in range(m):
+		for j in range(p // 2):
+			column_factors[i] += B[j << 1][i] * B[(j << 1) + 1][i]
+	
+	for i in range(n):
+		row_factors_temp = -row_factors[i]
+		for j in range(m):
+			C[i][j] = row_factors_temp - column_factors[j]
+			for k in range(p // 2):
+				index = k << 1
+				C[i][j] += (A[i][index + 1] + B[index][j]) * (A[i][index] + B[index + 1][j])
+	
+	if p % 2 != 0:
+		for i in range(n):
+			temp_Ai = A[i][p - 1]
+			for j in range(m):
+				C[i][j] += temp_Ai * B[p - 1][j]
+	
+	return C
+\end{lstlisting}
+\end{center}
+
+\section{Функциональные тесты}
+
+В таблице \ref{tbl:func_test} приведены функциональные тесты для функций, реализующих алгоритмы умножения матриц. Все тесты пройдены успешно.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+		\captionsetup{justification=raggedright,singlelinecheck=off}
+		\caption{\label{tbl:func_test} Функциональные тесты}
+		\begin{tabular}{|c@{\hspace{7mm}}|c@{\hspace{7mm}}|c@{\hspace{7mm}}|c@{\hspace{7mm}}|c@{\hspace{7mm}}|c@{\hspace{7mm}}|}
+			\hline
+			Матрица A & Матрица B & Ожидаемый результат \\ 
+			\hline
+			$\begin{pmatrix}
+				&
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				&
+			\end{pmatrix}$ &
+			Сообщение об ошибке \\ \hline
+
+			$\begin{pmatrix}
+				&
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				1 & 2\\
+				3 & 4\\
+				5 & 6
+			\end{pmatrix}$ &
+			Сообщение об ошибке \\ \hline
+
+			$\begin{pmatrix}
+				1 & 0 & 1
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				-1 & 0 & -1
+			\end{pmatrix}$ &
+			Сообщение об ошибке \\ \hline
+
+			$\begin{pmatrix}
+				1 & 2 & 3 \\
+				4 & 5 & 6 \\
+				7 & 8 & 9
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				-1 & -2 & -3 \\
+				-4 & -5 & -6 \\
+				-7 & -8 & -9
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				-30 & -36 & -42 \\
+				-66 & -81 & -96 \\
+				-102 & -126 & -150
+			\end{pmatrix}$ \\ \hline
+
+			$\begin{pmatrix}
+				1 & 2 & 3
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				1 \\
+				2 \\
+				3
+			\end{pmatrix}$ &
+			$\begin{pmatrix}
+				14 \\
+			\end{pmatrix}$ \\ \hline
+
+		\end{tabular}
+		\end{threeparttable}
+	\end{center}
+	
+\end{table}
+
+\section{Вывод}
+
+Были реализованы функции алгоритмов умножения матриц. Было проведено функциональное тестирование указанных функций.

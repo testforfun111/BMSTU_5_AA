@@ -1,0 +1,71 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут указаны средства реализации, будут представлены реализация алгоритма, а также функциональные тесты.
+
+
+
+\section{Средства реализации}
+
+Данная программа разработана на языке C++, поддерживаемом многими операционными системами.
+
+
+
+\section{Реализация алгоритмов}
+
+Aлгоритм поиска полным перебором ищет соседние 2 элемента приведены в листинге \ref{lst:solution}.
+
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:solution,caption=Aлгоритм поиска полным перебором]
+int solution(vector<int> arr, int x1, int x2)
+{
+	int flag = 0;
+	int i = 0;
+	for (; i < arr.size() - 1; i++)
+	{
+		if (arr[i] == x1 &&  arr[i + 1] == x2)
+		flag = 1;
+		if (flag == 1)
+		break;
+	}
+	if (flag == 1)
+	return i;
+	else 
+	return -1;
+}
+
+\end{lstlisting}
+\end{center}
+\clearpage
+
+
+\section{Функциональные тесты}
+
+В таблице \ref{tbl:tests} приведены функциональные тесты для функций, реализующих алгоритмы. Все тесты пройдены успешно.
+
+\begin{table}[h]
+	\begin{center}
+		\begin{threeparttable}
+			\captionsetup{justification=raggedright,singlelinecheck=off}
+			\caption{\label{tbl:tests} Функциональные тесты}
+			\begin{tabular}{|c|c|c|}
+				\hline
+				№&Входные данные& Ожидаемый результат \\
+				\hline
+				1&5 1 8 2 3 5 2 3& 2\\
+				\hline
+				2&5 1 8 2 3 5 2 4& -1\\
+				\hline
+				3&5 1 8 2 3 5 4 2& Ошибка ввода\\
+				\hline
+			\end{tabular}
+		\end{threeparttable}
+	\end{center}
+\end{table}
+
+
+\section{Вывод}
+
+Были реализованы функции поиска полным перебором.
+Было проведено функциональное тестирование данного алгоритма.

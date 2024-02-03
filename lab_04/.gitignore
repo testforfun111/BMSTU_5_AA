@@ -1,0 +1,9 @@
+*.aux
+*.bbl
+*.log
+*.out
+*.gz
+*.toc
+.vscode
+.vcxproj.user
+.vs

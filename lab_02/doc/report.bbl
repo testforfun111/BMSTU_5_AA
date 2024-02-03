@@ -1,0 +1,36 @@
+\begin{thebibliography}{1}
+\def\selectlanguageifdefined#1{
+\expandafter\ifx\csname date#1\endcsname\relax
+\else\language\csname l@#1\endcsname\fi}
+\ifx\undefined\url\def\url#1{{\small #1}}\else\fi
+\ifx\undefined\BibUrl\def\BibUrl#1{\url{#1}}\else\fi
+\ifx\undefined\BibAnnote\long\def\BibAnnote#1{(#1)}\else\fi
+\ifx\undefined\BibEmph\def\BibEmph#1{\emph{#1}}\else\fi
+
+\bibitem{virt}
+\selectlanguageifdefined{russian}
+Н.Вирт Алгоритмы и структуры данных.
+\newblock 1989.
+
+\bibitem{alg}
+\selectlanguageifdefined{russian}
+Д. А. Погорелов, А. М. Таразанов Оптимизация
+  классического алгоритма Винограда для
+  перемножения матриц.
+\newblock 2019.
+
+\bibitem{alg2}
+\selectlanguageifdefined{russian}
+Умножение матриц. [Электронный ресурс].
+\newblock Режим доступа:
+  \url{http://www.algolib.narod.ru/Math/Matrix.html} (дата
+  обращения: 10.10.2023).
+
+\bibitem{model}
+\selectlanguageifdefined{russian}
+М. В. Ульянов Ресурсно-эффективные
+  компьютерные алгоритмы. Разработка и
+  анализ.
+\newblock 2007.
+
+\end{thebibliography}

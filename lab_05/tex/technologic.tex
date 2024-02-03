@@ -1,0 +1,318 @@
+\chapter{Технологическая часть}
+
+В данном разделе будут приведены средства реализации, реализация алгоритма, а также функциональные тесты.
+
+
+\section{Средства реализации}
+
+В данной работе для реализации был выбран язык программирования \textit{C++}~\cite{bib2}, так как он предоставляет весь необходимый функционал для выполнения работы. 
+Для замера времени работы использовалась функция \textit{std::chrono::system\_clock::now()}~\cite{bib3}.
+
+\section{Реализация алгоритмов}
+
+В листингах \ref{lst:parallel_processing} - \ref{lst:stage_3} представлены функции для конвейерного и ленейного алгоритмов обработки строки.
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:parallel_processing,caption=Функция алгоритма конвейерной обработки строки]
+void parallel(int size, int cnt, bool is_count)
+{
+	queue<strings_t> qA1;
+	queue<strings_t> qA2;
+	queue<strings_t> qA3;
+	vector<vector<int>> V1;
+	vector<vector<int>> V2;
+	bool qA1_is_empty = false;
+	bool qA2_is_empty = false;
+	mutex m1;
+	mutex m2;
+	mutex time_mutex;
+	
+	for (int i = 0; i < cnt; i++)
+	{
+		strings_t strings;
+		strings.text = random_text(size);
+		strings.pattern = random_text(size / 4);
+		qA1.push(strings);
+	}
+	
+	vector<strings_state_t> state(cnt);
+	for (int i = 0; i < cnt; i++)
+	{
+		strings_state_t tmp_state;
+		tmp_state.stage_1 = false;
+		tmp_state.stage_2 = false;
+		tmp_state.stage_3 = false;
+		state[i] = tmp_state;
+	}
+	chrono::time_point<std::chrono::system_clock> time_begin = chrono::system_clock::now();
+	vector<res_time_t> time_result_arr;
+	init_time_result_arr(time_result_arr, time_begin, cnt, 3);
+	thread threads[3];
+	threads[0] = thread(parallel_stage_1, ref(time_mutex), ref(m1), ref(qA1), ref(qA2), ref(V1), ref(state), ref(time_result_arr), ref(qA1_is_empty));
+	threads[1] = thread(parallel_stage_2, ref(time_mutex), ref(m1), ref(m2), ref(qA2), ref(qA3), ref(V2), ref(state), ref(time_result_arr), ref(qA1_is_empty), ref(qA2_is_empty));
+	threads[2] = thread(parallel_stage_3, ref(time_mutex), ref(m2), ref(qA3), ref(V1), ref(V2), ref(state), ref(time_result_arr), ref(qA2_is_empty));
+	
+	for (int i = 0; i < 3; i++)
+	threads[i].join();
+	if (is_count)
+	printf("     %4d      |     %4d      |   %.6f  \n",
+	size, cnt, time_result_arr[cnt - 1].end);
+	else
+	print_res_time(time_result_arr, cnt * 3);
+}
+\end{lstlisting}
+\end{center}
+
+\clearpage
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:linear_processing,caption=Функция алгоритма линейной обработки строки]
+void liner(int size, int cnt, bool is_count)
+{
+	queue<strings_t> qA1;
+	queue<strings_t> qA2;
+	queue<strings_t> qA3;
+	vector<int> tmpV1;
+	vector<int> tmpV2;
+	mutex m1;
+	mutex m2;
+	
+	std::chrono::time_point<std::chrono::system_clock> time_start, time_end,
+	time_begin = std::chrono::system_clock::now();
+	
+	std::vector<res_time_t> time_result_arr;
+	init_time_result_arr(time_result_arr, time_begin, cnt, 3);
+	
+	for (int i = 0; i < cnt; i++)
+	{
+		strings_t strings;
+		strings.text = random_text(size);
+		strings.pattern = random_text(size / 4);
+		
+		qA1.push(strings);
+	}
+	
+	for (int i = 0; i < cnt; i++)
+	{
+		time_start = chrono::system_clock::now();
+		tmpV1 = task1(ref(m1), ref(qA1), ref(qA2));
+		time_end = std::chrono::system_clock::now();
+		
+		save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, i + 1, 1);
+		
+		time_start = chrono::system_clock::now();
+		tmpV2 = task2(ref(m1), ref(m2), ref(qA2), ref(qA3));
+		time_end = std::chrono::system_clock::now();
+		
+		save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, i + 1, 2);
+		
+		time_start = chrono::system_clock::now();
+		task3(ref(m2), ref(qA3), ref(tmpV1), ref(tmpV2), Myfile);
+		time_end = std::chrono::system_clock::now();
+		
+		save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, i + 1, 3);
+	}
+	
+	if (is_count)
+	{
+		printf("     %4d      |     %4d      |   %.6f  \n",
+		size, cnt, time_result_arr[cnt - 1].end);
+	}
+	else
+	{
+		print_res_time(time_result_arr, cnt * 3);
+	}
+}
+\end{lstlisting}
+\end{center}
+
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:parallel_stage_1,caption=Функция 1-ой ленты конвейерной обработки строки]
+void parallel_stage_1(mutex& time_mutex, mutex& m1, queue<strings_t>& qA1, queue<strings_t>& qA2, vector<vector<int>>& V1, vector<strings_state_t>& state, vector<res_time_t>& time_result_arr, bool & qA1_is_empty)
+{
+	chrono::time_point<chrono::system_clock> time_start, time_end;
+	int task_num = 1;
+	while (!qA1.empty())
+	{
+		time_start = chrono::system_clock::now();
+		vector<int> tmp = task1(m1, qA1, qA2);
+		time_end = std::chrono::system_clock::now();
+		time_mutex.lock();
+		save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, task_num, 1);
+		time_mutex.unlock();
+		V1.push_back(tmp);
+		state[task_num - 1].stage_1 = true;
+		task_num++;
+	}
+	qA1_is_empty = true;
+}
+\end{lstlisting}
+\end{center}
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:parallel_stage_2,caption=Функция 2-ой ленты конвейерной обработки строки]
+void parallel_stage_2(mutex& time_mutex, mutex& m1, mutex& m2, queue<strings_t>& qA2, queue<strings_t>& qA3, vector<vector<int>>& V2, vector<strings_state_t>& state, vector<res_time_t>& time_result_arr, bool &qA1_is_empty, bool & qA2_is_empty)
+{
+	chrono::time_point<chrono::system_clock> time_start, time_end;
+	int task_num = 1;
+	while (1)
+	{
+		if (qA2.empty() == false)
+		{
+			if (state[task_num - 1].stage_1 == true)
+			{
+				time_start = chrono::system_clock::now();
+				vector<int> tmp = task2(m1, m2, qA2, qA3);
+				time_end = std::chrono::system_clock::now();
+				time_mutex.lock();
+				save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, task_num, 2);
+				time_mutex.unlock();
+				V2.push_back(tmp);
+				state[task_num - 1].stage_2 = true;
+				task_num++;
+			}
+		}
+		else if (qA1_is_empty)
+		break;
+	}
+	qA2_is_empty = true;
+}
+\end{lstlisting}
+\end{center}
+
+\clearpage
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:parallel_stage_3,caption=Функция 3-ей ленты конвейерной обработки строки]
+void parallel_stage_3(mutex& time_mutex, mutex& m2, queue<strings_t>& qA3, vector<vector<int>>& V1, vector<vector<int>>& V2, vector<strings_state_t>& state, vector<res_time_t>& time_result_arr, bool& qA2_is_empty)
+{
+	chrono::time_point<chrono::system_clock> time_start, time_end;
+	int task_num = 1;
+	while (1)
+	{
+		if (qA3.empty() == false)
+		{
+			if (state[task_num - 1].stage_2 == true && state[task_num - 1].stage_1 == true)
+			{
+				time_start = chrono::system_clock::now();
+				task3(m2, qA3, V1[task_num - 1], V2[task_num - 1], Myfile);
+				time_end = std::chrono::system_clock::now();
+				time_mutex.lock();
+				save_result(time_result_arr, time_start, time_end, time_result_arr[0].time_begin, task_num, 3);
+				time_mutex.unlock();
+				state[task_num - 1].stage_3 = true;
+				task_num++;
+			}
+		}
+		else if (qA2_is_empty)
+		break;
+	}
+}
+
+\end{lstlisting}
+\end{center}
+
+\clearpage
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:stage_1,caption=Функция реализации 1-ого этапа обработки строки]
+vector<int> task1(mutex& m1, queue<strings_t>& qA1, queue<strings_t>& qA2)
+{
+	m1.lock();
+	strings_t tmpStrings = qA1.front();
+	m1.unlock();
+	vector<int> tmpV = algoS(tmpStrings.text, tmpStrings.pattern);
+	
+	m1.lock();
+	qA2.push(tmpStrings);
+	m1.unlock();
+	
+	qA1.pop();
+	return tmpV;
+}
+\end{lstlisting}
+\end{center}
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:stage_2,caption=Функция реализации 2-ого этапа обработки строки]
+vector<int> task2(mutex& m1, mutex& m2, queue<strings_t>& qA2, queue<strings_t>& qA3)
+{
+	
+	m1.lock();
+	strings_t tmpStrings = qA2.front();
+	m1.unlock();
+	
+	vector<int> tmpV = algoS(tmpStrings.text, reverse_string(tmpStrings.pattern));
+	
+	m2.lock();
+	qA3.push(tmpStrings);
+	m2.unlock();
+	m1.lock();
+	qA2.pop();
+	m1.unlock();
+	return tmpV;
+}
+\end{lstlisting}
+\end{center}
+
+\clearpage
+
+\begin{center}
+\captionsetup{justification=raggedright,singlelinecheck=off}
+\begin{lstlisting}[label=lst:stage_3,caption=Функция реализации 3-его этапа обработки строки]
+void task3(mutex& m2, queue<strings_t>& qA3, vector<int>& V1, vector<int>& V2, ofstream& file)
+{
+	m2.lock();
+	strings_t tmpStrings = qA3.front();
+	m2.unlock();
+	
+	write_to_file(file, tmpStrings.pattern, tmpStrings.text, V1, V2);
+	
+	m2.lock();
+	qA3.pop();
+	m2.unlock();
+}
+\end{lstlisting}
+\end{center}
+
+\section{Функциональные тесты}
+
+В таблице \ref{tbl:functional_test} приведены функциональные тесты для конвейерного и ленейного алгоритмов обработки строки. Все тесты пройдены успешно.
+
+\begin{table}[h]
+	\begin{center}
+	\begin{threeparttable}
+		\captionsetup{justification=raggedright,singlelinecheck=off}
+		\caption{\label{tbl:functional_test} Функциональные тесты}
+		\begin{tabular}{|c|c|c|c|}
+			\hline
+			 Размер строки & Кол--во заявок & Алгоритм & Ожидаемый результат 
+			\\ \hline
+			-10 & 10 & Конвейерный & Сообщение об ошибке 
+			\\ \hline
+			 10 & -10 & Конвейерный & Сообщение об ошибке 
+			\\ \hline
+			 0 & 10 & Конвейерный & Сообщение об ошибке 
+			\\ \hline
+			 k & 10 & Конвейерный & Сообщение об ошибке 
+			\\ \hline
+			 100 & 20 & Конвейерный & Вывод результ. таблички
+			\\ \hline
+			 100 & 20 & Линейный & Вывод результ. таблички
+			\\ \hline
+		\end{tabular}
+	\end{threeparttable}
+	\end{center}
+\end{table}
+
+\section*{Вывод}
+
+В данном разделе были разработаны алгоритмы для конвейерного и ленейного алгоритмов обработки матриц, проведено тестирование, описаны средства реализации.
